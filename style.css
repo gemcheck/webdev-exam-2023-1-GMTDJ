@@ -5,3 +5,11 @@
 .text-color-blue {
     color: rgb(38, 105, 249);
 }
+
+.cursor-pointer{
+    cursor: pointer;
+}
+
+.guideTableChoise {
+    width: 5em;
+}
