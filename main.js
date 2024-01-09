@@ -23,11 +23,6 @@ let filteredRoutes;
 let currentPageRoutes = 0;
 const rowsPerPageRoutes = 10;
 
-let allGuides;
-let filteredGuides;
-let currentPageGuides = 0;
-const rowsPerPageGuides = 5;
-
 let totalRoutesCount = 0;
 let totalGuidesCount = 0;
 
@@ -159,6 +154,11 @@ function routeObjectFilter() {
     updatePagination(1);
     displayRoutesTable();
 }
+
+let allGuides;
+let filteredGuides;
+let currentPageGuides = 0;
+const rowsPerPageGuides = 5;
 
 function displayGuidesTable() {
     let tbody = document.getElementById("guidesBody");
