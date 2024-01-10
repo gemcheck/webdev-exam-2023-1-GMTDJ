@@ -10,7 +10,7 @@ function showAlert(msg, category = 'success') {
 }
 
 function alertActionHandler(event) {
-    let alertMsg = "Заявка оформлена!";
+    let alertMsg = "Заявка создана";
     if (alertMsg) {
         showAlert(alertMsg, 'success');
     }
@@ -24,7 +24,6 @@ let currentPageRoutes = 0;
 const rowsPerPageRoutes = 10;
 
 let totalRoutesCount = 0;
-let totalGuidesCount = 0;
 
 function getRoutes() {
     const url = `http://exam-2023-1-api.std-900.ist.mospolytech.ru/api/routes?api_key=${api_key}`;
@@ -34,11 +33,15 @@ function getRoutes() {
     xhr.responseType = "json";
 
     xhr.onload = function () {
-        allRoutes = this.response;
-        filteredRoutes = allRoutes;
-        updatePagination(1);
-        displayRoutesTable();
-        displayObjectSelector();
+        if (xhr.status === 200) {
+            allRoutes = this.response;
+            filteredRoutes = allRoutes;
+            updatePagination(1);
+            displayRoutesTable();
+            displayObjectSelector();
+        } else {
+            alert('Ошибка' + this.response.error);
+        }
     };
 
     xhr.send();
@@ -62,10 +65,14 @@ function choiceButtonClick(event) {
     xhr.send();
 
     xhr.onload = function () {
-        allGuidesArray = this.response;
-        filteredGuidesArray = allGuidesArray;
-        displayGuidesTable();
-        displayLanguagesSelect();
+        if (xhr.status === 200) {
+            allGuides = this.response;
+            filteredGuides = allGuides;
+            displayGuidesTable();
+            displayLanguagesSelect();
+        } else {
+            alert("Ошибка!" + this.response.error);
+        }
     };
 }
 
@@ -160,31 +167,33 @@ let filteredGuides;
 let currentPageGuides = 0;
 const rowsPerPageGuides = 5;
 
+let totalGuidesCount = 0;
+
 function displayGuidesTable() {
     let tbody = document.getElementById("guidesBody");
     tbody.innerHTML = "";
 
     for (let i = (currentPageGuides - 1) * rowsPerPageGuides; i < currentPageGuides * rowsPerPageGuides; i++) {
         if (i < totalCountGuides) {
-            if (filteredGuidesArray[i] !== undefined) {
+            if (filteredGuides[i] !== undefined) {
                 let row = tbody.insertRow();
                 let photo = row.insertCell(0);
                 photo.innerHTML = '<img src="img/doctor_portrait.jpg" alt="profile_photo" style="width: 75px; height: 75px;">';
                 let name = row.insertCell(1);
-                name.innerText = filteredGuidesArray[i].name.toString();
+                name.innerText = filteredGuides[i].name.toString();
                 let language = row.insertCell(2);
-                language.innerText = filteredGuidesArray[i].language.toString();
+                language.innerText = filteredGuides[i].language.toString();
                 let workExperience = row.insertCell(3);
-                workExperience.innerText = filteredGuidesArray[i].workExperience.toString();
+                workExperience.innerText = filteredGuides[i].workExperience.toString();
                 let pricePerHour = row.insertCell(4);
-                pricePerHour.innerText = filteredGuidesArray[i].pricePerHour.toString();
+                pricePerHour.innerText = filteredGuides[i].pricePerHour.toString();
                 let cellButton = row.insertCell(5);
                 let button = document.createElement("button");
 
                 button.type = "button";
                 button.className = "btn btn-warning";
                 button.textContent = "Выбрать";
-                button.setAttribute("guide-id", filteredGuidesArray[i].id);
+                button.setAttribute("guide-id", filteredGuides[i].id);
                 button.addEventListener("click", alertActionHandler);
                 cellButton.appendChild(button);
             }
@@ -194,8 +203,8 @@ function displayGuidesTable() {
 
 function getUniqueLanguages() {
     const uniqueLanguages = new Set();
-    for (let i = 0; i < allGuidesArray.length; i++) {
-        uniqueLanguages.add(allGuidesArray[i].language.toString());
+    for (let i = 0; i < allGuides.length; i++) {
+        uniqueLanguages.add(allGuides[i].language.toString());
     }
     return uniqueLanguages;
 }
@@ -215,9 +224,9 @@ function guideLanguageFilter() {
     let selectedOption = selector.options[selector.selectedIndex];
 
     if (selectedOption.value === "Не выбран") {
-        filteredGuidesArray = allGuidesArray;
+        filteredGuides = allGuides;
     } else {
-        filteredGuidesArray = allGuidesArray.filter(guide => {
+        filteredGuides = allGuides.filter(guide => {
             return guide.language.toString() === selectedOption.value;
         });
     }
@@ -233,15 +242,15 @@ function guideExpFilter() {
     console.log(minExp, maxExp);
     console.log(isNaN(minExp), isNaN(maxExp));
     if (!isNaN(minExp) && isNaN(maxExp)) {
-        filteredGuidesArray = filteredGuidesArray.filter(guide =>{
+        filteredGuides = filteredGuides.filter(guide =>{
             return parseInt(guide.workExperience) >= minExp;
         });
     } else if (isNaN(minExp) && !isNaN(maxExp)) {
-        filteredGuidesArray = filteredGuidesArray.filter(guide =>{
+        filteredGuides = filteredGuides.filter(guide =>{
             return parseInt(guide.workExperience) <= maxExp;
         });
     } else if (!isNaN(minExp) && !isNaN(maxExp)) {
-        filteredGuidesArray = filteredGuidesArray.filter(guide =>{
+        filteredGuides = filteredGuides.filter(guide =>{
             return parseInt(guide.workExperience) <= maxExp && parseInt(guide.workExperience) >= minExp;
         });
     }
@@ -292,10 +301,10 @@ function clickOnPagination(event) {
 
 function updatePaginationGuides(value) {
     currentPageGuides = value;
-    totalCountGuides = filteredGuidesArray.length;
+    totalCountGuides = filteredGuides.length;
 
     document.getElementById("page-start-guides").innerText = currentPageGuides.toString();
-    let maxPages = filteredGuidesArray.length / rowsPerPageGuides;
+    let maxPages = filteredGuides.length / rowsPerPageGuides;
     if (Math.floor(maxPages) < maxPages) {
         maxPages = Math.floor(maxPages) + 1;
     } else {
@@ -323,7 +332,7 @@ function updatePaginationGuides(value) {
 function clickOnPaginationGuides(event) {
     let listElement = event.target;
     if (listElement.getElementsByClassName("page-link").length === 0) {
-        if (listElement.id === "next-guides" && currentPageGuides < filteredGuidesArray.length / rowsPerPageGuides) {
+        if (listElement.id === "next-guides" && currentPageGuides < filteredGuides.length / rowsPerPageGuides) {
             updatePaginationGuides(parseInt(currentPageGuides) + 1);
         } else if (listElement.id === "prev-guides" && parseInt(currentPageGuides) > 1) {
             updatePaginationGuides(parseInt(currentPageGuides) - 1);
