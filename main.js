@@ -1,5 +1,7 @@
 /* eslint-disable no-use-before-define */
+// Отключение правила запрещения использование переменных или функций до их объявления
 /* eslint-disable max-len */
+// Отключение правила устанавливающее максимальную длину строки кода
 
 // Всплывающее уведомление (по умолчанию success)
 function showAlert(msg, category = 'success') {
