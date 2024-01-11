@@ -1,7 +1,5 @@
 /* eslint-disable no-use-before-define */
-// Отключение правила запрещения использование переменных или функций до их объявления
 /* eslint-disable max-len */
-// Отключение правила устанавливающее максимальную длину строки кода
 
 // Всплывающее уведомление (по умолчанию success)
 function showAlert(msg, category = 'success') {
@@ -19,8 +17,8 @@ function showAlert(msg, category = 'success') {
 }
 
 // Вызов уведомления
+let alertMsg = "Заявка создана";
 function alertActionHandler(event) {
-    let alertMsg = "Заявка создана";
     if (alertMsg) {
         showAlert(alertMsg, 'success');
     }
@@ -87,6 +85,9 @@ function choiceButtonClick(event) {
 
     // Получаем идентификатор маршрута из атрибута кнопки
     let routeId = event.target.getAttribute("route-id");
+
+    currentRouteId = routeId;
+
     // Формируем URL для запроса данных о гидах для выбранного маршрута
     const url = `http://exam-2023-1-api.std-900.ist.mospolytech.ru/api/routes/${routeId}/guides?api_key=${api_key}`;
 
@@ -167,7 +168,7 @@ function displayRoutesTable() {
 function getUniqueObjects() {
     // Создаем множество Set для хранения уникальных объектов
     const uniqueObjects = new Set();
-     // Делим строки на объекты
+    // Делим строки на объекты
     const re = new RegExp("/(\\s-\\s)|(\\s–\\s)|(\\s-\\s)|(\\s-\\s)/");
     for (let i = 0; i < allRoutes.length; i++) {
         // Разбиваем строку на объекты
@@ -231,7 +232,7 @@ function routeObjectFilter() {
     currentPageRoutes = 1;
     // Проверяем, была ли выбрана опция "Не выбрано"
     if (selectedOption.value === "Не выбрано") {
-         // Если выбрана "Не выбрано", применяем фильтр ко всем маршрутам
+        // Если выбрана "Не выбрано", применяем фильтр ко всем маршрутам
         filteredRoutes = allRoutes;
     } else {
         // В противном случае, фильтруем маршруты на основе выбранного объекта
@@ -250,7 +251,7 @@ let filteredGuides;
 let currentPageGuides = 0;
 const rowsPerPageGuides = 5;
 
-let totalGuidesCount = 0;
+let totalCountGuides = 0;
 
 // Отображение таблицы с гидами
 function displayGuidesTable() {
@@ -296,8 +297,14 @@ function displayGuidesTable() {
                 button.textContent = "Выбрать";
                 // Идентификации выбранного гида при нажатии кнопки
                 button.setAttribute("guide-id", filteredGuides[i].id);
-                // Привязка к обработчику события alertActionHandler
-                button.addEventListener("click", alertActionHandler);
+
+                // Указатель, что при нажатии дошлжно открыться модальное окно
+                button.setAttribute("data-bs-toggle", "modal");
+                // Индефикатор модального окна
+                button.setAttribute("data-bs-target", "#modalWindow");
+
+                // Привязка к обработчику события очистки модального окна
+                button.addEventListener("click", chooseGuideClick);
 
                 // Добавляем кнопку в ячейку
                 cellButton.appendChild(button);
@@ -520,32 +527,264 @@ function clickOnPaginationGuides(event) {
     }
 }
 
+let currentRouteId = -1;
+let currentGuideId = -1;
+
+
+// Отображение информации в модальном окне
+function displayModalInfo() {
+    let routeName, guideName;
+    // Поиск соответствующего маршрута с текущим идентификатором (currentRouteId)
+    allRoutes.forEach(route =>{
+        // Проверка идентификатора текущего маршрута
+        if (route.id == currentRouteId) {
+            // Сохраняем его название
+            routeName = route.name;
+        }
+    });
+
+    // Поиск соответствующего гида с текущим идентификатором (currentGuideId)
+    allGuides.forEach(guide =>{
+        // Проверка идентификатора текущего гида
+        if (guide.id == currentGuideId) {
+            // Сохраняем его имя
+            guideName = guide.name;
+        }
+    });
+    // Устанавливаем текстовое содержимое элементов в модальном окне
+    document.getElementById("guideName").innerText = guideName;
+    document.getElementById("routeName").innerText = routeName;
+}
+
+// Очистка данных в модальном окне
+function clearModal() {
+    document.getElementById("routeStartTime").value = "";
+    document.getElementById("routeDate").value = "";
+    document.getElementById("peopleNumber").value = "";
+    document.getElementById("routeDuration").value = "1";
+
+    document.getElementById("firstOption").checked = "";
+    document.getElementById("firstOption").disabled = false;
+
+    document.getElementById("secondOption").checked = "";
+    document.getElementById("secondOption").disabled = false;
+}
+
+// Вызов модального окна с определнным параметрами
+function chooseGuideClick(event) {
+    // Очистка
+    clearModal();
+    // Индефикатор выбранного пути
+    currentGuideId = event.target.getAttribute("guide-id");
+    // Отображаем информацию о выбранном гиде в модальном окне
+    displayModalInfo();
+    // Вычисляем стоимость тура
+    calculateAmount();
+}
+
+// Создание заказа
+function orderData() {
+    // Создаение объекта
+    let order = new FormData();
+
+    // Получаем значения параметров заказа из элементов формы
+    const firstOption = document.getElementById("firstOption").checked ? 1 : 0;
+    const secondOption = document.getElementById("secondOption").checked ? 1 : 0;
+
+    // Добавляем параметры заказа в объект FormData.
+    order.append("guide_id", currentGuideId);
+    order.append("route_id", currentRouteId);
+    order.append("date", document.getElementById("routeDate").value.toString());
+    order.append("time", document.getElementById("routeStartTime").value.toString());
+    order.append("duration", document.getElementById("routeDuration").value.toString());
+    order.append("persons", document.getElementById("peopleNumber").value.toString());
+    order.append("price", document.getElementById("totalAmount").innerText.toString());
+    order.append("optionFirst", firstOption.toString());
+    order.append("optionSecond", secondOption.toString());
+    return order;
+}
+
+// Массив праздничных дней
+let DayOff = [
+    "01-01", "01-02", "01-03", "01-04", "01-05", "01-06", "01-07", "01-08",
+    "02-23",
+    "03-08",
+    "04-29", "04-30",
+    "05-01", "05-09", "05-10",
+    "06-12",
+    "11-04",
+    "12-30", "12-31"
+];
+
+// Расчёт стоимости маршрута
+function calculateAmount() {
+    let amount = 0;
+
+    // Разбиваем время начала маршрута на часы и минуты
+    let routeTime = document.getElementById("routeStartTime").value.split(":");
+    let routeTimeHours = parseInt(routeTime[0]);
+    let routeTimeMinutes = parseInt(routeTime[1]);
+    
+    // Переменные для хранения дополнительных опций по времени суток
+    let morningPlus = 0, eveningPlus = 0;
+
+    // Проверка, является ли время маршрута утренним (9:00 - 12:00)
+    if (routeTimeHours >= 9 && routeTimeHours <= 12) {
+        if (!(routeTimeHours === 12 && routeTimeMinutes > 0)) {
+            morningPlus = 400;
+        }
+    }
+
+    // Проверка, является ли время маршрута вечерним (20:00 - 23:00)
+    if (routeTimeHours >= 20 && routeTimeHours <= 23) {
+        if (!(routeTimeHours === 23 && routeTimeMinutes > 0)) {
+            morningPlus = 1000;
+        }
+
+    }
+
+    // Коэффициент для выходных и праздничных дней
+    let dayOffCoef = 1;
+
+    // Получаем дату маршрута
+    let date = document.getElementById("routeDate").value;
+
+    // Проверяем, является ли дата выходным или праздничным
+    DayOff.forEach(dateoff => {
+        if (dateoff.toString().includes(date)) {
+            dayOffCoef = 1.5;
+        }
+
+    });
+
+    // Количество участников маршрута
+    let peopleNumber = parseInt(document.getElementById("peopleNumber").value);
+    let peoplePlus = 0;
+
+    // Условия для различных интервалов участников
+    if (peopleNumber > 5 && peopleNumber <= 10) {
+        peoplePlus = 1000;
+    } else if (peopleNumber > 10 && peopleNumber <= 20) {
+        peoplePlus = 1500;
+
+    }
+    // Получаем выбранную продолжительность маршрута
+    let selector = document.getElementById("routeDuration");
+    let routeDuration = parseInt(selector.options[selector.selectedIndex].value);
+
+    // Стоимость работы гида в час
+    let pricePerHour = 0;
+    allGuides.forEach(guide =>{
+        if (guide.id == currentGuideId) {
+            pricePerHour = parseInt(guide.pricePerHour);
+        }
+
+    });
+
+    // Рассчитываем общую стоимость с учетом всех дополнительных опций
+
+    // Дополнительная опция "firstOption"
+    let firstOptionCoef = 1;
+    if (document.getElementById("firstOption").checked) {
+        firstOptionCoef = 1.5;
+    }
+
+    // Дополнительная опция "secondOption"
+    let secondOptionCoef = 1;
+    if (document.getElementById("secondOption").checked) {
+        DayOff.forEach(dateoff => {
+            if (dateoff.toString().includes(date) || (date === 6) || (date === 0)) {
+                secondOptionCoef = 1.3;
+            } else {
+                secondOptionCoef = 1.25;
+            }
+        });
+    }
+    amount = pricePerHour * routeDuration * dayOffCoef + morningPlus + eveningPlus + peoplePlus;
+    amount *= firstOptionCoef;
+    amount *= secondOptionCoef;
+    
+    // Выводим окончательную стоимость на страницу
+    document.getElementById("totalAmount").innerText = Math.ceil(amount).toString();
+}
+
+// Создание заказа на сервере
+function purchaseSubmitButtonClick() {
+    // URL для отправки запроса на создание заказа
+    const url = `http://exam-2023-1-api.std-900.ist.mospolytech.ru/api/orders?api_key=${api_key}`;
+
+    // Создаем новый объект XMLHttpRequest
+    let xhr = new XMLHttpRequest();
+    // Устанавливаем тип запроса
+    xhr.open("POST", url);
+    // Устанавливаем ожидаемый тип ответа
+    xhr.responseType = "json";
+    // Получаем данные заказа
+    let order = orderData();
+
+    // Обработка ответа от сервера
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            // Если успешно, выводим уведомление об успешном заказе
+            showAlert(alertMsg, 'success');
+        } else {
+            // Если произошла ошибка, выводим сообщение об ошибке
+            showAlert('Ошибка: ' + this.response.error, 'danger');
+            //alert('Ошибка: ' + this.response.error);
+        }
+    };
+
+    // Отправляем данные заказа на сервер
+    xhr.send(order);
+}
+
+// Проверка кол-ва людей
+function checkPeopleNumber(){
+    // Проверка условия: если количество людей больше 10
+    if (event.target.value > 10){
+        // Отключение второй опции и снятие галочки
+        document.getElementById("secondOption").disabled = true;
+        document.getElementById("secondOption").checked = "";
+    } else{
+        // Включение второй опции
+        document.getElementById("secondOption").disabled = false;
+    }
+}
+
 // Заполнение страницы
 window.onload = function () {
     // После загрузки страницы вызываем функцию getRoutes() для получения маршрутов
     getRoutes();
 
-    // Слушатель события "input" для элемента с id "searchName". 
-    // При изменении в поле ввода вызывается функция routeSearchFilter.
+    // Слушатель события "input" для элемента с id "searchName"
+    // При изменении в поле ввода вызывается функция routeSearchFilter
     document.getElementById("searchName").addEventListener("input", routeSearchFilter);
     
-    // Слушатель события "change" для элемента с id "selectObject". 
-    // При изменении выбранного объекта вызывается функция routeObjectFilter.
+    // Слушатель события "change" для элемента с id "selectObject"
+    // При изменении выбранного объекта вызывается функция routeObjectFilter
     document.getElementById("selectObject").addEventListener("change", routeObjectFilter);
     
-    // Слушатель события "click" для элемента с id "pagination". 
-    // При клике на кнопки пагинации вызывается функция clickOnPagination.
+    // Слушатель события "click" для элемента с id "pagination"
+    // При клике на кнопки пагинации вызывается функция clickOnPagination
     document.getElementById("pagination").addEventListener("click", clickOnPagination);
 
-    // Слушатель события "click" для элемента с id "guideExpSearch". 
-    // При клике на кнопку поиска гидов вызывается функция guideExpFilter.
+    // Слушатель события "click" для элемента с id "guideExpSearch"
+    // При клике на кнопку поиска гидов вызывается функция guideExpFilter
     document.getElementById("guideExpSearch").addEventListener("click", guideExpFilter);
     
-    // Слушатель события "change" для элемента с id "guideLanguagePlace". 
-    // При изменении выбранного языка вызывается функция guideLanguageFilter.
+    // Слушатель события "change" для элемента с id "guideLanguagePlace"
+    // При изменении выбранного языка вызывается функция guideLanguageFilter
     document.getElementById("guideLanguagePlace").addEventListener("change", guideLanguageFilter);
     
-    // Слушатель события "click" для элемента с id "pagination-guides". 
-    // При клике на кнопки пагинации для гидов вызывается функция clickOnPaginationGuides.
+    // Слушатель события "click" для элемента с id "pagination-guides"
+    // При клике на кнопки пагинации для гидов вызывается функция clickOnPaginationGuides
     document.getElementById("pagination-guides").addEventListener("click", clickOnPaginationGuides);
+
+    // Слушатель события "change" для элемента с id "modalBody"
+    // При изменении на модальном окне вызывается функция calculateAmount
+    document.getElementById("modalBody").addEventListener("change", calculateAmount);
+
+    // Слушатель события "click" для элемента с id "purchaseSubmit"
+    // При клике на кнопку подтвердить на модальном окне вызывается функция purchaseSubmitButtonClick
+    document.getElementById("purchaseSubmit").addEventListener("click", purchaseSubmitButtonClick);
 };
