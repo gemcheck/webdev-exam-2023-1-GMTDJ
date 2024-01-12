@@ -190,10 +190,10 @@ function getUniqueObjects() {
 function routeSearchFilter() {
     // Получаем значение, введенное пользователем, из элемента с идентификатором "searchName"
     let searchedName = document.getElementById("searchName").value;
-    // Вызываем функцию routeObjectFilter (предположительно, фильтрация по объектам)
+    // Вызываем функцию routeObjectFilter
     routeObjectFilter();
 
-    // Вызываем функцию routeObjectFilter (предположительно, фильтрация по объектам)
+    // Вызываем функцию routeObjectFilter
     filteredRoutes = filteredRoutes.filter(route => {
         return route.name.toString().includes(searchedName);
     });
