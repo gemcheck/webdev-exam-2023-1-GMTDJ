@@ -59,7 +59,7 @@ function getRoutes() {
             updatePagination(1);
             displayRoutesTable();
 
-            // Отображение селектора объектов иных
+            // Отображение селектора объектов
             displayObjectSelector();
         } else {
             // Вывод сообщения об ошибке
